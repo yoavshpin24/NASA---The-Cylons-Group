@@ -1,4 +1,4 @@
-# Terra — Morocco farmland explorer
+# Morocco farmland map
 
 Explore the 2025 `N33W007` farmland tile in Morocco, inspect individual fields, and draw and export your own polygon boundaries.
 
@@ -27,10 +27,12 @@ Preparation builds a spatial index and overview image in `data/`. The source Par
 
 ## Use the map
 
-- The map starts over the Morocco dataset. Gold outlines show all 276,353 fields using a tiled layer; detailed tiles load as you zoom in.
+- The map fills the window and starts over the Morocco dataset. Navigation and search stay within a Morocco-area viewing extent. Zooming out is limited to keep the viewport in that region, including after resizing.
+- Gold outlines show all 276,353 fields using a tiled layer; detailed tiles load as you zoom in. The map uses a regular arrow cursor while panning and drawing.
 - Hover over a field, or tap on a touch screen, to highlight its exact boundary in turquoise. Its tooltip shows a local field number, label, approximate area in hectares, three confidence scores, dataset date, and tile ID. Fields with missing scores display “Not available.” Confidence values are dataset scores, not calibrated accuracy percentages. Local field numbers come from source row order.
-- **Go to farmland** returns to the dataset; **Show field boundaries** toggles the overlay.
-- **Draw a polygon** retains the original selection workflow. Place at least three points and click the first point or press Enter to finish. Drag vertices to edit, copy coordinates, or download GeoJSON/CSV. Field inspection pauses while drawing, and the last completed selection is saved in your browser.
+- **Go to farmland** returns to the dataset; **Field boundaries** toggles the overlay. The globe button shows the Morocco area.
+- Open **Tools** to access **Draw a polygon**, measurements, coordinates, and exports. This panel starts collapsed, and opens as a compact bottom sheet on mobile. Place at least three points and click the first point or press Enter to finish. Drag vertices to edit, copy coordinates, or download GeoJSON/CSV. Closing the panel during drawing cancels that draft and restores the previous selection. Completed selections remain on the map with the panel closed.
+- Field inspection pauses while drawing, and the last completed selection is saved in your browser. Restored selections must be within the Morocco viewing extent.
 
 The server binds only to your computer's loopback address. Field data is read locally. Basemap imagery, place-name search, and optional fonts require internet access.
 

@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8f5">
-  <meta name="description" content="Explore Morocco's farmland boundaries, inspect individual fields, and draw and export your own polygon selections.">
-  <title>Terra — Polygon Explorer</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%2326483d'/%3E%3Cpath d='m10 25 6-15 14 7-5 13Z' fill='none' stroke='%23d8f3a1' stroke-width='2.5'/%3E%3C/svg%3E">
+  <meta name="description" content="Explore farmland boundaries in Morocco and draw polygon selections.">
+  <title>Map</title>
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="vendor/leaflet.css">
   <link rel="stylesheet" href="styles.css">
   <script defer src="vendor/leaflet.js"></script>
@@ -14,7 +14,7 @@
 </head>
 <body>
   <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <symbol id="i-polygon" viewBox="0 0 24 24"><path d="m5 16 3-12 13 5-5 12Z"/><path d="M3 14h4v4H3zM6 2h4v4H6zM19 7h4v4h-4zM14 19h4v4h-4z" class="icon-fill"/></symbol>
+    <symbol id="i-polygon" viewBox="0 0 24 24"><path d="m5 16 3-12 13 5-5 12Z"/><path d="M3 14h4v4H3zM6 2h4v4H6zM19 7h4v4h-4zM14 19h4v4h-4z"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
@@ -30,55 +30,51 @@
     <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
   </svg>
-  <header class="header">
-    <a class="brand" href="./" aria-label="Terra home"><span class="brand-mark"><svg><use href="#i-polygon"/></svg></span>terra<span class="brand-dot">.</span></a>
-    <span class="header-divider"></span><span class="product-name">Polygon Explorer</span>
-    <div class="header-right"><span class="online-dot"></span><span>A world of possibilities</span><button class="icon-button help-button" id="help" aria-label="How to use Terra"><svg><use href="#i-info"/></svg></button></div>
-  </header>
-  <main>
-    <section class="page-heading"><div><div class="eyebrow">MOROCCO · FARMLAND EXPLORER</div><h1>A closer look at the land.</h1><p>Explore field boundaries. Hover to inspect. Draw your own area.</p></div><span class="reference-badge"><svg><use href="#i-globe"/></svg> WGS 84 <span>EPSG:4326</span></span></section>
-    <div class="workspace">
-      <aside class="sidebar" aria-label="Polygon coordinates and tools">
-        <section class="farmland-section" aria-label="Farmland boundaries">
-          <div class="section-label"><span class="field-swatch"></span> MOROCCO FARMLAND <span class="dataset-year">2025</span></div>
-          <label class="farmland-switch"><span>Show field boundaries</span><input id="farmland-toggle" type="checkbox" checked disabled></label>
-          <p id="farmland-status" role="status" aria-live="polite">Loading field boundaries…</p>
-          <button id="farmland-focus" class="farmland-focus" disabled><svg><use href="#i-target"/></svg> Go to farmland</button>
-        </section>
-        <section class="draw-section">
-          <div class="section-label"><span class="step">01</span> DEFINE AN AREA</div>
-          <h2>Your patch of the planet.</h2>
-          <p id="draw-description">Place points on the map to outline an area. Close the shape to get its coordinates.</p>
-          <button class="primary-button" id="draw"><svg><use href="#i-polygon"/></svg><span>Draw a polygon</span><svg class="button-arrow"><use href="#i-arrow"/></svg></button>
-          <div class="drawing-actions" id="drawing-actions" hidden><button id="finish" class="primary-button" disabled><svg><use href="#i-check"/></svg>Finish polygon <kbd>↵</kbd></button><div class="secondary-actions"><button id="undo"><svg><use href="#i-undo"/></svg>Undo point</button><button id="cancel">Cancel</button></div></div>
-          <div class="draw-tip"><span class="tiny-dot"></span><span id="draw-tip">Click to place points. Click the first to finish.</span></div>
-        </section>
-        <section class="selection-section">
-          <div class="section-label"><span class="step">02</span> YOUR SELECTION <span id="selection-state" class="state-badge">NO AREA YET</span></div>
-          <div class="stats"><div><span>Area <span class="approx" title="Approximate spherical measurement">≈</span></span><strong id="area">— <small>km²</small></strong></div><div><span>Vertices</span><strong id="vertices">0 <small>points</small></strong></div></div>
-          <div class="coordinates-heading"><h3>Coordinates</h3><button class="icon-button" id="clear" disabled aria-label="Clear polygon"><svg><use href="#i-trash"/></svg></button></div>
-          <div class="tabs" role="tablist" aria-label="Coordinate format"><button class="active" role="tab" aria-selected="true" id="tab-table" aria-controls="coordinate-content" data-format="table">Decimal degrees</button><button role="tab" aria-selected="false" id="tab-json" aria-controls="coordinate-content" data-format="geojson">GeoJSON</button></div>
-          <div class="coordinate-content" id="coordinate-content" role="tabpanel" aria-labelledby="tab-table">
-            <div class="empty-state"><div class="empty-art"><svg><use href="#i-polygon"/></svg><span class="orbit-dot"></span></div><strong>A few points. Endless possibilities.</strong><p>Your coordinates will appear here<br>as you draw on the map.</p></div>
-          </div>
-          <div class="coordinate-note"><span class="tiny-dot"></span><span id="coordinate-note">Latitude, longitude · 6 decimal places</span></div>
-          <div class="export-buttons"><button id="copy" disabled><svg><use href="#i-copy"/></svg>Copy coordinates</button><button id="download" disabled aria-label="Download GeoJSON"><svg><use href="#i-download"/></svg></button></div>
-          <div class="export-format"><span>EXPORT AS</span><button class="active" data-export="geojson">GeoJSON</button><button data-export="csv">CSV</button></div>
-        </section>
-        <div class="sidebar-footer"><svg><use href="#i-globe"/></svg><span>One planet. Your perspective.</span></div>
-      </aside>
-      <section class="map-panel" aria-label="Interactive Earth map">
-        <div id="map" aria-label="Morocco farmland map. Hover on a field for details, or activate Draw a polygon to select an area."></div>
-        <div class="map-top"><div class="search-wrap"><form id="search-form" class="search-box"><svg><use href="#i-search"/></svg><input id="search" aria-label="Search a place or latitude, longitude" placeholder="Search a place or coordinates…" autocomplete="off"><kbd>/</kbd><button type="submit" aria-label="Search"><svg><use href="#i-arrow"/></svg></button></form><div id="search-results" class="search-results" hidden></div></div><span class="map-live"><span class="online-dot"></span> EXPLORE EARTH</span></div>
-        <div class="map-tools"><div class="tool-group"><button id="zoom-in" aria-label="Zoom in"><svg><use href="#i-plus"/></svg></button><button id="zoom-out" aria-label="Zoom out"><svg><use href="#i-minus"/></svg></button></div><div class="tool-group"><button id="locate" aria-label="Go to my location"><svg><use href="#i-target"/></svg></button><button id="fit" aria-label="Fit selection or farmland"><svg><use href="#i-expand"/></svg></button></div></div>
-        <div class="map-hint" id="map-hint"><span class="hint-icon"><svg><use href="#i-polygon"/></svg></span><div><strong>The world is your canvas.</strong><span>Start drawing, or <button id="demo">try an example <span>↗</span></button></span></div><button class="icon-button" id="dismiss-hint" aria-label="Dismiss tip"><svg><use href="#i-close"/></svg></button></div>
-        <div class="map-bottom"><div class="basemap-toggle" aria-label="Map style"><button class="active" id="satellite" aria-pressed="true"><span class="map-swatch satellite-swatch"></span>Satellite</button><button id="streets" aria-pressed="false"><span class="map-swatch street-swatch"></span>Street</button></div><div class="cursor-coordinates" id="cursor-coordinates">33.4900° N &nbsp; 6.5000° W</div><div class="north-indicator"><span>N</span><svg viewBox="0 0 24 30"><path d="m12 3 8 23-8-5-8 5Z" fill="currentColor" stroke="none"/></svg></div></div>
-        <div class="map-error" id="map-error" hidden>Map imagery couldn’t load. Check your connection or try the Street view.</div>
+  <main class="map-panel" aria-label="Morocco map">
+    <div id="map" aria-label="Morocco farmland map. Hover over a field for details. Polygon drawing is available under Tools."></div>
+
+    <div class="map-top">
+      <div class="search-wrap">
+        <form id="search-form" class="search-box"><svg><use href="#i-search"/></svg><input id="search" aria-label="Search Morocco or latitude, longitude" placeholder="Search in Morocco…" autocomplete="off"><button type="submit" aria-label="Search"><svg><use href="#i-arrow"/></svg></button></form>
+        <div id="search-results" class="search-results" hidden></div>
+      </div>
+      <section class="farmland-control" aria-label="Farmland boundaries">
+        <label class="farmland-switch"><span class="field-swatch"></span><span>Field boundaries</span><input id="farmland-toggle" type="checkbox" checked disabled></label>
+        <p id="farmland-status" role="status" aria-live="polite">Loading field boundaries…</p>
+        <button id="farmland-focus" class="text-button" disabled>Go to farmland</button>
       </section>
     </div>
-    <footer class="page-footer"><span>Made for the curious. Built for the precise.</span><span>Pan to explore <span class="footer-dot">·</span> Scroll to zoom <span class="footer-dot">·</span> Draw to discover</span></footer>
+
+    <div class="map-tools">
+      <button id="tools-toggle" class="tools-toggle" aria-expanded="false" aria-controls="tools-panel"><svg><use href="#i-polygon"/></svg><span>Tools</span></button>
+      <div class="tool-group"><button id="zoom-in" aria-label="Zoom in"><svg><use href="#i-plus"/></svg></button><button id="zoom-out" aria-label="Zoom out"><svg><use href="#i-minus"/></svg></button></div>
+      <div class="tool-group"><button id="morocco" aria-label="Morocco overview" title="Morocco overview"><svg><use href="#i-globe"/></svg></button><button id="fit" aria-label="Fit selection or farmland" title="Fit selection or farmland"><svg><use href="#i-expand"/></svg></button><button id="help" aria-label="Map help"><svg><use href="#i-info"/></svg></button></div>
+    </div>
+
+    <aside id="tools-panel" class="tools-panel" aria-label="Polygon tools" hidden>
+      <div class="panel-heading"><h2>Polygon tools</h2><button class="icon-button" id="close-tools" aria-label="Close polygon tools"><svg><use href="#i-close"/></svg></button></div>
+      <section class="draw-section">
+        <p id="draw-description">Draw an area to measure it and export its coordinates.</p>
+        <button class="primary-button" id="draw"><svg><use href="#i-polygon"/></svg><span>Draw a polygon</span></button>
+        <div class="drawing-actions" id="drawing-actions" hidden><button id="finish" class="primary-button" disabled><svg><use href="#i-check"/></svg>Finish polygon <kbd>↵</kbd></button><div class="secondary-actions"><button id="undo"><svg><use href="#i-undo"/></svg>Undo point</button><button id="cancel">Cancel</button></div></div>
+        <p id="draw-tip" class="draw-tip">Click to place points. Click the first to finish.</p>
+      </section>
+      <section class="selection-section">
+        <div class="section-label">Selection <span id="selection-state" class="state-badge">NO AREA YET</span></div>
+        <div class="stats"><div><span>Area ≈</span><strong id="area">— <small>km²</small></strong></div><div><span>Vertices</span><strong id="vertices">0 <small>points</small></strong></div></div>
+        <div class="coordinates-heading"><h3>Coordinates</h3><button class="icon-button" id="clear" disabled aria-label="Clear polygon"><svg><use href="#i-trash"/></svg></button></div>
+        <div class="tabs" role="tablist" aria-label="Coordinate format"><button class="active" role="tab" aria-selected="true" id="tab-table" aria-controls="coordinate-content" data-format="table">Decimal degrees</button><button role="tab" aria-selected="false" id="tab-json" aria-controls="coordinate-content" data-format="geojson">GeoJSON</button></div>
+        <div class="coordinate-content" id="coordinate-content" role="tabpanel" aria-labelledby="tab-table"></div>
+        <p id="coordinate-note" class="coordinate-note">Latitude, longitude · 6 decimal places</p>
+        <div class="export-buttons"><button id="copy" disabled><svg><use href="#i-copy"/></svg>Copy coordinates</button><button id="download" disabled aria-label="Download GeoJSON"><svg><use href="#i-download"/></svg></button></div>
+        <div class="export-format"><span>EXPORT AS</span><button class="active" data-export="geojson">GeoJSON</button><button data-export="csv">CSV</button></div>
+      </section>
+    </aside>
+
+    <div class="map-bottom"><div class="basemap-toggle" aria-label="Map style"><button class="active" id="satellite" aria-pressed="true">Satellite</button><button id="streets" aria-pressed="false">Street</button></div><div class="cursor-coordinates" id="cursor-coordinates">33.4900° N &nbsp; 6.5000° W</div></div>
+    <div class="map-error" id="map-error" hidden>Map imagery couldn’t load. Check your connection or try Street view.</div>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <dialog id="help-dialog"><button class="icon-button dialog-close" id="close-help" aria-label="Close instructions"><svg><use href="#i-close"/></svg></button><span class="eyebrow">A SMALL GUIDE TO A BIG WORLD</span><h2>Find your place.</h2><ol><li>Hover over a gold field boundary to highlight it and see its area, confidence scores, date, and tile. Tap a field on touch devices.</li><li>Use <strong>Go to farmland</strong> to return to the dataset. Toggle boundaries off for a clear basemap.</li><li>Select <strong>Draw a polygon</strong> and click to place at least three points. Field inspection pauses while drawing.</li><li>Click the first point or press <strong>Enter</strong> to close your shape.</li><li>Drag any vertex to refine your boundary. Copy or download the coordinates.</li></ol><p><strong>Shortcuts:</strong> / to search · Enter to finish · Backspace to undo a point · Escape to cancel.</p><p>Coordinates use WGS 84. The table shows latitude, longitude; GeoJSON uses longitude, latitude. Measurements are approximate. Confidence values are dataset scores, not calibrated accuracy percentages. Field numbers are local record identifiers. Your last completed selection is saved in this browser.</p><button class="primary-button" id="got-it">Let’s explore <svg><use href="#i-arrow"/></svg></button></dialog>
+  <dialog id="help-dialog"><button class="icon-button dialog-close" id="close-help" aria-label="Close instructions"><svg><use href="#i-close"/></svg></button><h2>Map controls</h2><ul><li>Hover over a gold field boundary to inspect it. Tap a field on a touch screen.</li><li>Pan and zoom within the Morocco area. Search is limited to Morocco.</li><li>Open <strong>Tools</strong> for polygon drawing, measurements, and exports.</li><li>Place at least three points, then press <strong>Enter</strong> or click the first point to finish. Drag vertices to edit.</li></ul><p>/ search · Enter finish · Backspace undo · Escape cancel</p><p>Coordinates use WGS 84. Measurements are approximate. Confidence values are dataset scores. Field numbers are local record identifiers.</p><button class="primary-button" id="got-it">Close</button></dialog>
 </body>
 </html>

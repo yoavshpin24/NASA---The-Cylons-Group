@@ -2,7 +2,6 @@ import { area, wrapLongitude, unwrap, validPolygon, geoJSON, csv } from './geome
 import { attachFarmland } from './farmland-layer.js';
 
 const $ = id => document.getElementById(id);
-const icon = name => `<svg><use href="#i-${name}"/></svg>`;
 let points = [], backup = [], drawing = false, format = 'table', exportFormat = 'geojson', markers = [], toastTimer, searchController;
 const storageKey = 'terra-polygon-v1';
 const notify = message => { $('toast').textContent=message; $('toast').hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>$('toast').hidden=true,4500); };
@@ -14,7 +13,13 @@ if (!window.L) {
   throw new Error('Leaflet is unavailable');
 }
 
-const map = L.map('map',{zoomControl:false,doubleClickZoom:false,minZoom:2,maxZoom:19,worldCopyJump:true,maxBounds:[[-85.051129,-540],[85.051129,540]],maxBoundsViscosity:1}).setView([33.49,-6.5],10);
+const moroccoBounds = L.latLngBounds([[27.4,-13.3],[36.2,-0.9]]);
+const map = L.map('map',{zoomControl:false,doubleClickZoom:false,minZoom:6,maxZoom:19,maxBounds:moroccoBounds,maxBoundsViscosity:1}).setView([33.49,-6.5],10);
+function constrainView() {
+  map.setMinZoom(Math.max(6,map.getBoundsZoom(moroccoBounds,true)));
+  map.panInsideBounds(moroccoBounds,{animate:false});
+}
+constrainView();
 map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
 L.control.scale({position:'bottomleft',imperial:false,maxWidth:90}).addTo(map);
 const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:18,maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics, GIS User Community'});
@@ -68,7 +73,7 @@ function renderData() {
   $('selection-state').classList.toggle('ready',!drawing&&points.length>0);
   $('coordinate-note').textContent=format==='table'?'Latitude, longitude · 6 decimal places':'Longitude, latitude · closed polygon ring';
   if(!points.length){
-    $('coordinate-content').innerHTML=`<div class="empty-state"><div class="empty-art">${icon('polygon')}<span class="orbit-dot"></span></div><strong>A few points. Endless possibilities.</strong><p>Your coordinates will appear here<br>as you draw on the map.</p></div>`;
+    $('coordinate-content').innerHTML='<div class="empty-state">No polygon selected.<br>Draw an area to see its coordinates.</div>';
   } else if(format==='table') {
     $('coordinate-content').innerHTML=`<table class="coordinate-table"><thead><tr><th>POINT</th><th>LATITUDE</th><th>LONGITUDE</th></tr></thead><tbody>${points.map((p,i)=>`<tr data-index="${i}"><td>${String(i+1).padStart(2,'0')}</td><td>${p.lat.toFixed(6)}</td><td>${wrapLongitude(p.lng).toFixed(6)}</td></tr>`).join('')}</tbody></table>`;
   } else {
@@ -84,14 +89,13 @@ function setDrawing(value) {
   farmland.onDrawingChange();
   $('draw').hidden=value;$('drawing-actions').hidden=!value;
   $('map').classList.toggle('map-drawing',value);
-  $('draw-description').textContent=value?'Click on the map to add points to your boundary. Drag a point to adjust it.':'Place points on the map to outline an area. Close the shape to get its coordinates.';
+  $('draw-description').textContent=value?'Click on the map to add points. Drag a point to adjust it.':'Draw an area to measure it and export its coordinates.';
   $('draw-tip').textContent=points.length?'Drag any vertex to refine your selection.':'Click to place points. Click the first to finish.';
   $('draw').querySelector('span').textContent=points.length?'Draw a new polygon':'Draw a polygon';
   render();
 }
 function start() {
-  backup=points.map(p=>({...p}));points=[];$('map-hint').hidden=true;setDrawing(true);
-  if(window.innerWidth<=720)$('map').scrollIntoView({behavior:'smooth',block:'center'});
+  backup=points.map(p=>({...p}));points=[];setDrawing(true);
 }
 function finish() {
   if(points.length<3){notify('Add at least three points to finish your polygon.');return;}
@@ -102,10 +106,17 @@ $('draw').addEventListener('click',start);
 $('finish').addEventListener('click',finish);
 $('undo').addEventListener('click',()=>{points.pop();ghost.setLatLngs([]);render();});
 $('cancel').addEventListener('click',()=>{points=backup;setDrawing(false);});
-$('clear').addEventListener('click',()=>{points=[];backup=[];setDrawing(false);save();$('map-hint').hidden=false;notify('Selection cleared. The world is your canvas again.');});
+$('clear').addEventListener('click',()=>{points=[];backup=[];setDrawing(false);save();notify('Selection cleared.');});
+function setToolsOpen(open) {
+  if(!open&&drawing){points=backup;setDrawing(false);}
+  $('tools-panel').hidden=!open;
+  $('tools-toggle').setAttribute('aria-expanded',String(open));
+}
+$('tools-toggle').addEventListener('click',()=>setToolsOpen($('tools-panel').hidden));
+$('close-tools').addEventListener('click',()=>{setToolsOpen(false);$('tools-toggle').focus();});
 map.on('click',e=>{
   $('search-results').hidden=true;
-  if(!drawing)return;
+  if(!drawing||!moroccoBounds.contains(e.latlng))return;
   let p={lat:e.latlng.lat,lng:e.latlng.lng};
   if(points.length){p.lng=points.at(-1).lng+wrapLongitude(p.lng-points.at(-1).lng);if(map.distance(points.at(-1),p)<.05)return;}
   points.push(p);render();
@@ -138,7 +149,7 @@ $('copy').addEventListener('click',async()=>{
 $('download').addEventListener('click',()=>{
   const text=exportFormat==='csv'?csv(points):JSON.stringify(geoJSON(points),null,2)+'\n';
   const blob=new Blob([text],{type:exportFormat==='csv'?'text/csv;charset=utf-8':'application/geo+json'});
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`terra-polygon.${exportFormat}`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`polygon.${exportFormat}`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   notify(`${exportFormat==='csv'?'CSV':'GeoJSON'} downloaded.`);
 });
 
@@ -146,22 +157,11 @@ $('zoom-in').addEventListener('click',()=>map.zoomIn());
 $('zoom-out').addEventListener('click',()=>map.zoomOut());
 function fit() {if(points.length)map.fitBounds(L.latLngBounds(unwrap(points)),{padding:[65,85],maxZoom:16});else farmland.focus();}
 $('fit').addEventListener('click',fit);
-$('locate').addEventListener('click',()=>{
-  if(!navigator.geolocation){notify('Location is unavailable in this browser. Search for a place instead.');return;}
-  notify('Finding your location…');
-  navigator.geolocation.getCurrentPosition(p=>{map.setView([p.coords.latitude,p.coords.longitude],13);notify('Map centered on your location.');},()=>notify('Location access unavailable. Search for your city instead.'),{timeout:12000});
-});
+$('morocco').addEventListener('click',()=>map.fitBounds(moroccoBounds));
 for(const [id,layer,other] of [['satellite',satellite,streets],['streets',streets,satellite]])$(id).addEventListener('click',()=>{
   if(map.hasLayer(layer))return;loadedTiles=failedTiles=0;$('map-error').hidden=true;map.removeLayer(other);layer.addTo(map);
   for(const key of ['satellite','streets']){$(key).classList.toggle('active',key===id);$(key).setAttribute('aria-pressed',String(key===id));}
 });
-$('dismiss-hint').addEventListener('click',()=>$('map-hint').hidden=true);
-$('demo').addEventListener('click',()=>{
-  if(drawing)return;
-  points=[{lat:33.505,lng:-6.535},{lat:33.507,lng:-6.525},{lat:33.501,lng:-6.520},{lat:33.496,lng:-6.529},{lat:33.499,lng:-6.538}];
-  setDrawing(false);save();fit();$('map-hint').hidden=true;notify('An example boundary in Morocco. Drag its vertices to make it yours.');
-});
-
 function searchMessage(text) {const div=document.createElement('div');div.className='search-message';div.textContent=text;$('search-results').replaceChildren(div);$('search-results').hidden=false;}
 $('search-form').addEventListener('submit',async e=>{
   e.preventDefault();const query=$('search').value.trim();if(!query)return;
@@ -169,16 +169,16 @@ $('search-form').addEventListener('submit',async e=>{
   const pair=query.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,;]\s*(-?\d+(?:\.\d+)?)\s*$/);
   if(pair){
     const lat=Number(pair[1]),lng=Number(pair[2]);
-    if(Math.abs(lat)>85.051129||Math.abs(lng)>180){searchMessage('Use latitude from −85.05 to 85.05 and longitude from −180 to 180.');return;}
+    if(!moroccoBounds.contains([lat,lng])){searchMessage('Choose coordinates within the Morocco area.');return;}
     map.setView([lat,lng],12);$('search-results').hidden=true;return;
   }
   searchMessage('Looking for your place…');
   const timeout=setTimeout(()=>searchController.abort(),12000);
   try {
-    const response=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=${encodeURIComponent(query)}`,{signal:searchController.signal,headers:{Accept:'application/json'}});
+    const response=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=ma&bounded=1&viewbox=-13.3,36.2,-0.9,27.4&q=${encodeURIComponent(query)}`,{signal:searchController.signal,headers:{Accept:'application/json'}});
     if(!response.ok)throw new Error('Search unavailable');
-    const results=await response.json();
-    if(!results.length){searchMessage('No places found. Try a city name or latitude, longitude.');return;}
+    const results=(await response.json()).filter(result=>moroccoBounds.contains([Number(result.lat),Number(result.lon)]));
+    if(!results.length){searchMessage('No places found in Morocco. Try a city or coordinates.');return;}
     $('search-results').replaceChildren();
     results.forEach(result=>{
       const button=document.createElement('button');button.type='button';button.textContent=result.display_name;
@@ -199,14 +199,14 @@ $('help-dialog').addEventListener('click',e=>{if(e.target===$('help-dialog')){co
 document.addEventListener('keydown',e=>{
   if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||$('help-dialog').open)return;
   if(e.key==='/'){e.preventDefault();$('search').focus();}
-  if(!drawing)return;
+  if(!drawing){if(e.key==='Escape'&&!$('tools-panel').hidden){setToolsOpen(false);$('tools-toggle').focus();}return;}
   if(e.key==='Enter'){e.preventDefault();finish();}
   if(e.key==='Escape')$('cancel').click();
   if(e.key==='Backspace'||((e.ctrlKey||e.metaKey)&&e.key==='z')){e.preventDefault();$('undo').click();}
 });
-new ResizeObserver(()=>map.invalidateSize()).observe($('map'));
+new ResizeObserver(()=>{map.invalidateSize();constrainView();}).observe($('map'));
 try {
   const stored=JSON.parse(localStorage.getItem(storageKey));
-  if(Array.isArray(stored)&&stored.length<=10000&&validPolygon(stored)){points=stored;setDrawing(false);$('map-hint').hidden=true;}
+  if(Array.isArray(stored)&&stored.length<=10000&&validPolygon(stored)&&stored.every(point=>moroccoBounds.contains(point))){points=stored;setDrawing(false);}
 }catch { /* Start with an empty map when stored data is invalid or unavailable. */ }
 render();
