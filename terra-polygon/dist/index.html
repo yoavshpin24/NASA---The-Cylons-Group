@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8f5">
-  <meta name="description" content="Draw a boundary anywhere on Earth. Get precise polygon coordinates, measure your area, and export GeoJSON or CSV.">
+  <meta name="description" content="Explore Morocco's farmland boundaries, inspect individual fields, and draw and export your own polygon selections.">
   <title>Terra — Polygon Explorer</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%2326483d'/%3E%3Cpath d='m10 25 6-15 14 7-5 13Z' fill='none' stroke='%23d8f3a1' stroke-width='2.5'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="vendor/leaflet.css">
@@ -36,9 +36,15 @@
     <div class="header-right"><span class="online-dot"></span><span>A world of possibilities</span><button class="icon-button help-button" id="help" aria-label="How to use Terra"><svg><use href="#i-info"/></svg></button></div>
   </header>
   <main>
-    <section class="page-heading"><div><div class="eyebrow">YOUR WORLD, DEFINED</div><h1>Every place has a boundary.</h1><p>Draw yours. Get the coordinates. Take it anywhere.</p></div><span class="reference-badge"><svg><use href="#i-globe"/></svg> WGS 84 <span>EPSG:4326</span></span></section>
+    <section class="page-heading"><div><div class="eyebrow">MOROCCO · FARMLAND EXPLORER</div><h1>A closer look at the land.</h1><p>Explore field boundaries. Hover to inspect. Draw your own area.</p></div><span class="reference-badge"><svg><use href="#i-globe"/></svg> WGS 84 <span>EPSG:4326</span></span></section>
     <div class="workspace">
       <aside class="sidebar" aria-label="Polygon coordinates and tools">
+        <section class="farmland-section" aria-label="Farmland boundaries">
+          <div class="section-label"><span class="field-swatch"></span> MOROCCO FARMLAND <span class="dataset-year">2025</span></div>
+          <label class="farmland-switch"><span>Show field boundaries</span><input id="farmland-toggle" type="checkbox" checked disabled></label>
+          <p id="farmland-status" role="status" aria-live="polite">Loading field boundaries…</p>
+          <button id="farmland-focus" class="farmland-focus" disabled><svg><use href="#i-target"/></svg> Go to farmland</button>
+        </section>
         <section class="draw-section">
           <div class="section-label"><span class="step">01</span> DEFINE AN AREA</div>
           <h2>Your patch of the planet.</h2>
@@ -62,17 +68,17 @@
         <div class="sidebar-footer"><svg><use href="#i-globe"/></svg><span>One planet. Your perspective.</span></div>
       </aside>
       <section class="map-panel" aria-label="Interactive Earth map">
-        <div id="map" aria-label="Earth map. Activate Draw a polygon, then click to add vertices."></div>
+        <div id="map" aria-label="Morocco farmland map. Hover on a field for details, or activate Draw a polygon to select an area."></div>
         <div class="map-top"><div class="search-wrap"><form id="search-form" class="search-box"><svg><use href="#i-search"/></svg><input id="search" aria-label="Search a place or latitude, longitude" placeholder="Search a place or coordinates…" autocomplete="off"><kbd>/</kbd><button type="submit" aria-label="Search"><svg><use href="#i-arrow"/></svg></button></form><div id="search-results" class="search-results" hidden></div></div><span class="map-live"><span class="online-dot"></span> EXPLORE EARTH</span></div>
-        <div class="map-tools"><div class="tool-group"><button id="zoom-in" aria-label="Zoom in"><svg><use href="#i-plus"/></svg></button><button id="zoom-out" aria-label="Zoom out"><svg><use href="#i-minus"/></svg></button></div><div class="tool-group"><button id="locate" aria-label="Go to my location"><svg><use href="#i-target"/></svg></button><button id="fit" aria-label="Fit polygon or world"><svg><use href="#i-expand"/></svg></button></div></div>
+        <div class="map-tools"><div class="tool-group"><button id="zoom-in" aria-label="Zoom in"><svg><use href="#i-plus"/></svg></button><button id="zoom-out" aria-label="Zoom out"><svg><use href="#i-minus"/></svg></button></div><div class="tool-group"><button id="locate" aria-label="Go to my location"><svg><use href="#i-target"/></svg></button><button id="fit" aria-label="Fit selection or farmland"><svg><use href="#i-expand"/></svg></button></div></div>
         <div class="map-hint" id="map-hint"><span class="hint-icon"><svg><use href="#i-polygon"/></svg></span><div><strong>The world is your canvas.</strong><span>Start drawing, or <button id="demo">try an example <span>↗</span></button></span></div><button class="icon-button" id="dismiss-hint" aria-label="Dismiss tip"><svg><use href="#i-close"/></svg></button></div>
-        <div class="map-bottom"><div class="basemap-toggle" aria-label="Map style"><button class="active" id="satellite" aria-pressed="true"><span class="map-swatch satellite-swatch"></span>Satellite</button><button id="streets" aria-pressed="false"><span class="map-swatch street-swatch"></span>Street</button></div><div class="cursor-coordinates" id="cursor-coordinates">37.7749° N &nbsp; 122.4194° W</div><div class="north-indicator"><span>N</span><svg viewBox="0 0 24 30"><path d="m12 3 8 23-8-5-8 5Z" fill="currentColor" stroke="none"/></svg></div></div>
+        <div class="map-bottom"><div class="basemap-toggle" aria-label="Map style"><button class="active" id="satellite" aria-pressed="true"><span class="map-swatch satellite-swatch"></span>Satellite</button><button id="streets" aria-pressed="false"><span class="map-swatch street-swatch"></span>Street</button></div><div class="cursor-coordinates" id="cursor-coordinates">33.4900° N &nbsp; 6.5000° W</div><div class="north-indicator"><span>N</span><svg viewBox="0 0 24 30"><path d="m12 3 8 23-8-5-8 5Z" fill="currentColor" stroke="none"/></svg></div></div>
         <div class="map-error" id="map-error" hidden>Map imagery couldn’t load. Check your connection or try the Street view.</div>
       </section>
     </div>
     <footer class="page-footer"><span>Made for the curious. Built for the precise.</span><span>Pan to explore <span class="footer-dot">·</span> Scroll to zoom <span class="footer-dot">·</span> Draw to discover</span></footer>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <dialog id="help-dialog"><button class="icon-button dialog-close" id="close-help" aria-label="Close instructions"><svg><use href="#i-close"/></svg></button><span class="eyebrow">A SMALL GUIDE TO A BIG WORLD</span><h2>Find your place.</h2><ol><li>Search for a place, or pan and zoom the map.</li><li>Select <strong>Draw a polygon</strong> and click to place at least three points.</li><li>Click the first point or press <strong>Enter</strong> to close your shape.</li><li>Drag any vertex to refine your boundary. Copy or download the coordinates.</li></ol><p><strong>Shortcuts:</strong> / to search · Enter to finish · Backspace to undo a point · Escape to cancel.</p><p>Coordinates use WGS 84. The table shows latitude, longitude; GeoJSON uses longitude, latitude. Measurements are approximate. Your last completed selection is saved in this browser.</p><button class="primary-button" id="got-it">Let’s explore <svg><use href="#i-arrow"/></svg></button></dialog>
+  <dialog id="help-dialog"><button class="icon-button dialog-close" id="close-help" aria-label="Close instructions"><svg><use href="#i-close"/></svg></button><span class="eyebrow">A SMALL GUIDE TO A BIG WORLD</span><h2>Find your place.</h2><ol><li>Hover over a gold field boundary to highlight it and see its area, confidence scores, date, and tile. Tap a field on touch devices.</li><li>Use <strong>Go to farmland</strong> to return to the dataset. Toggle boundaries off for a clear basemap.</li><li>Select <strong>Draw a polygon</strong> and click to place at least three points. Field inspection pauses while drawing.</li><li>Click the first point or press <strong>Enter</strong> to close your shape.</li><li>Drag any vertex to refine your boundary. Copy or download the coordinates.</li></ol><p><strong>Shortcuts:</strong> / to search · Enter to finish · Backspace to undo a point · Escape to cancel.</p><p>Coordinates use WGS 84. The table shows latitude, longitude; GeoJSON uses longitude, latitude. Measurements are approximate. Confidence values are dataset scores, not calibrated accuracy percentages. Field numbers are local record identifiers. Your last completed selection is saved in this browser.</p><button class="primary-button" id="got-it">Let’s explore <svg><use href="#i-arrow"/></svg></button></dialog>
 </body>
 </html>

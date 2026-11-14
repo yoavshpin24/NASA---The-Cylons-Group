@@ -1,4 +1,5 @@
 import { area, wrapLongitude, unwrap, validPolygon, geoJSON, csv } from './geometry.js';
+import { attachFarmland } from './farmland-layer.js';
 
 const $ = id => document.getElementById(id);
 const icon = name => `<svg><use href="#i-${name}"/></svg>`;
@@ -13,12 +14,13 @@ if (!window.L) {
   throw new Error('Leaflet is unavailable');
 }
 
-const map = L.map('map',{zoomControl:false,doubleClickZoom:false,minZoom:2,maxZoom:19,worldCopyJump:true,maxBounds:[[-85.051129,-540],[85.051129,540]],maxBoundsViscosity:1}).setView([37.79,-122.43],10);
+const map = L.map('map',{zoomControl:false,doubleClickZoom:false,minZoom:2,maxZoom:19,worldCopyJump:true,maxBounds:[[-85.051129,-540],[85.051129,540]],maxBoundsViscosity:1}).setView([33.49,-6.5],10);
 map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
 L.control.scale({position:'bottomleft',imperial:false,maxWidth:90}).addTo(map);
 const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:18,maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics, GIS User Community'});
 const streets = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'});
 satellite.addTo(map);
+const farmland = attachFarmland(map, () => drawing);
 const polygon = L.polygon([],{color:'#d3f3a2',weight:3,fillColor:'#c1e88a',fillOpacity:.2,interactive:false}).addTo(map);
 const line = L.polyline([],{color:'#e0f7ba',weight:3,interactive:false}).addTo(map);
 const ghost = L.polyline([],{color:'#e0f7ba',weight:1.5,dashArray:'4 6',opacity:.8,interactive:false}).addTo(map);
@@ -79,6 +81,7 @@ function renderData() {
 function render() {renderShape();renderMarkers();renderData();}
 function setDrawing(value) {
   drawing=value;
+  farmland.onDrawingChange();
   $('draw').hidden=value;$('drawing-actions').hidden=!value;
   $('map').classList.toggle('map-drawing',value);
   $('draw-description').textContent=value?'Click on the map to add points to your boundary. Drag a point to adjust it.':'Place points on the map to outline an area. Close the shape to get its coordinates.';
@@ -141,7 +144,7 @@ $('download').addEventListener('click',()=>{
 
 $('zoom-in').addEventListener('click',()=>map.zoomIn());
 $('zoom-out').addEventListener('click',()=>map.zoomOut());
-function fit() {if(points.length)map.fitBounds(L.latLngBounds(unwrap(points)),{padding:[65,85],maxZoom:16});else map.setView([25,0],2);}
+function fit() {if(points.length)map.fitBounds(L.latLngBounds(unwrap(points)),{padding:[65,85],maxZoom:16});else farmland.focus();}
 $('fit').addEventListener('click',fit);
 $('locate').addEventListener('click',()=>{
   if(!navigator.geolocation){notify('Location is unavailable in this browser. Search for a place instead.');return;}
@@ -155,8 +158,8 @@ for(const [id,layer,other] of [['satellite',satellite,streets],['streets',street
 $('dismiss-hint').addEventListener('click',()=>$('map-hint').hidden=true);
 $('demo').addEventListener('click',()=>{
   if(drawing)return;
-  points=[{lat:37.8095,lng:-122.4817},{lat:37.8098,lng:-122.4558},{lat:37.7983,lng:-122.4478},{lat:37.7873,lng:-122.4602},{lat:37.7922,lng:-122.4853}];
-  setDrawing(false);save();fit();$('map-hint').hidden=true;notify('A little piece of San Francisco. Drag its vertices to make it yours.');
+  points=[{lat:33.505,lng:-6.535},{lat:33.507,lng:-6.525},{lat:33.501,lng:-6.520},{lat:33.496,lng:-6.529},{lat:33.499,lng:-6.538}];
+  setDrawing(false);save();fit();$('map-hint').hidden=true;notify('An example boundary in Morocco. Drag its vertices to make it yours.');
 });
 
 function searchMessage(text) {const div=document.createElement('div');div.className='search-message';div.textContent=text;$('search-results').replaceChildren(div);$('search-results').hidden=false;}
@@ -186,7 +189,7 @@ $('search-form').addEventListener('submit',async e=>{
       });$('search-results').append(button);
     });
     $('search-results').hidden=false;
-  } catch {searchMessage('Place search is unavailable. Try coordinates, such as 37.77, -122.42.');}
+  } catch {searchMessage('Place search is unavailable. Try coordinates, such as 33.49, -6.50.');}
   finally {clearTimeout(timeout);}
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))$('search-results').hidden=true;});
@@ -204,6 +207,6 @@ document.addEventListener('keydown',e=>{
 new ResizeObserver(()=>map.invalidateSize()).observe($('map'));
 try {
   const stored=JSON.parse(localStorage.getItem(storageKey));
-  if(Array.isArray(stored)&&stored.length<=10000&&validPolygon(stored)){points=stored;setDrawing(false);fit();$('map-hint').hidden=true;}
+  if(Array.isArray(stored)&&stored.length<=10000&&validPolygon(stored)){points=stored;setDrawing(false);$('map-hint').hidden=true;}
 }catch { /* Start with an empty map when stored data is invalid or unavailable. */ }
 render();
