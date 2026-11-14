@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8f5">
+  <meta name="description" content="Draw a boundary anywhere on Earth. Get precise polygon coordinates, measure your area, and export GeoJSON or CSV.">
+  <title>Terra — Polygon Explorer</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%2326483d'/%3E%3Cpath d='m10 25 6-15 14 7-5 13Z' fill='none' stroke='%23d8f3a1' stroke-width='2.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="vendor/leaflet.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-polygon" viewBox="0 0 24 24"><path d="m5 16 3-12 13 5-5 12Z"/><path d="M3 14h4v4H3zM6 2h4v4H6zM19 7h4v4h-4zM14 19h4v4h-4z" class="icon-fill"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="m8 5-5 5 5 5M3 10h11a6 6 0 0 1 0 12"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v1"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  </svg>
+  <header class="header">
+    <a class="brand" href="./" aria-label="Terra home"><span class="brand-mark"><svg><use href="#i-polygon"/></svg></span>terra<span class="brand-dot">.</span></a>
+    <span class="header-divider"></span><span class="product-name">Polygon Explorer</span>
+    <div class="header-right"><span class="online-dot"></span><span>A world of possibilities</span><button class="icon-button help-button" id="help" aria-label="How to use Terra"><svg><use href="#i-info"/></svg></button></div>
+  </header>
+  <main>
+    <section class="page-heading"><div><div class="eyebrow">YOUR WORLD, DEFINED</div><h1>Every place has a boundary.</h1><p>Draw yours. Get the coordinates. Take it anywhere.</p></div><span class="reference-badge"><svg><use href="#i-globe"/></svg> WGS 84 <span>EPSG:4326</span></span></section>
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Polygon coordinates and tools">
+        <section class="draw-section">
+          <div class="section-label"><span class="step">01</span> DEFINE AN AREA</div>
+          <h2>Your patch of the planet.</h2>
+          <p id="draw-description">Place points on the map to outline an area. Close the shape to get its coordinates.</p>
+          <button class="primary-button" id="draw"><svg><use href="#i-polygon"/></svg><span>Draw a polygon</span><svg class="button-arrow"><use href="#i-arrow"/></svg></button>
+          <div class="drawing-actions" id="drawing-actions" hidden><button id="finish" class="primary-button" disabled><svg><use href="#i-check"/></svg>Finish polygon <kbd>↵</kbd></button><div class="secondary-actions"><button id="undo"><svg><use href="#i-undo"/></svg>Undo point</button><button id="cancel">Cancel</button></div></div>
+          <div class="draw-tip"><span class="tiny-dot"></span><span id="draw-tip">Click to place points. Click the first to finish.</span></div>
+        </section>
+        <section class="selection-section">
+          <div class="section-label"><span class="step">02</span> YOUR SELECTION <span id="selection-state" class="state-badge">NO AREA YET</span></div>
+          <div class="stats"><div><span>Area <span class="approx" title="Approximate spherical measurement">≈</span></span><strong id="area">— <small>km²</small></strong></div><div><span>Vertices</span><strong id="vertices">0 <small>points</small></strong></div></div>
+          <div class="coordinates-heading"><h3>Coordinates</h3><button class="icon-button" id="clear" disabled aria-label="Clear polygon"><svg><use href="#i-trash"/></svg></button></div>
+          <div class="tabs" role="tablist" aria-label="Coordinate format"><button class="active" role="tab" aria-selected="true" id="tab-table" aria-controls="coordinate-content" data-format="table">Decimal degrees</button><button role="tab" aria-selected="false" id="tab-json" aria-controls="coordinate-content" data-format="geojson">GeoJSON</button></div>
+          <div class="coordinate-content" id="coordinate-content" role="tabpanel" aria-labelledby="tab-table">
+            <div class="empty-state"><div class="empty-art"><svg><use href="#i-polygon"/></svg><span class="orbit-dot"></span></div><strong>A few points. Endless possibilities.</strong><p>Your coordinates will appear here<br>as you draw on the map.</p></div>
+          </div>
+          <div class="coordinate-note"><span class="tiny-dot"></span><span id="coordinate-note">Latitude, longitude · 6 decimal places</span></div>
+          <div class="export-buttons"><button id="copy" disabled><svg><use href="#i-copy"/></svg>Copy coordinates</button><button id="download" disabled aria-label="Download GeoJSON"><svg><use href="#i-download"/></svg></button></div>
+          <div class="export-format"><span>EXPORT AS</span><button class="active" data-export="geojson">GeoJSON</button><button data-export="csv">CSV</button></div>
+        </section>
+        <div class="sidebar-footer"><svg><use href="#i-globe"/></svg><span>One planet. Your perspective.</span></div>
+      </aside>
+      <section class="map-panel" aria-label="Interactive Earth map">
+        <div id="map" aria-label="Earth map. Activate Draw a polygon, then click to add vertices."></div>
+        <div class="map-top"><div class="search-wrap"><form id="search-form" class="search-box"><svg><use href="#i-search"/></svg><input id="search" aria-label="Search a place or latitude, longitude" placeholder="Search a place or coordinates…" autocomplete="off"><kbd>/</kbd><button type="submit" aria-label="Search"><svg><use href="#i-arrow"/></svg></button></form><div id="search-results" class="search-results" hidden></div></div><span class="map-live"><span class="online-dot"></span> EXPLORE EARTH</span></div>
+        <div class="map-tools"><div class="tool-group"><button id="zoom-in" aria-label="Zoom in"><svg><use href="#i-plus"/></svg></button><button id="zoom-out" aria-label="Zoom out"><svg><use href="#i-minus"/></svg></button></div><div class="tool-group"><button id="locate" aria-label="Go to my location"><svg><use href="#i-target"/></svg></button><button id="fit" aria-label="Fit polygon or world"><svg><use href="#i-expand"/></svg></button></div></div>
+        <div class="map-hint" id="map-hint"><span class="hint-icon"><svg><use href="#i-polygon"/></svg></span><div><strong>The world is your canvas.</strong><span>Start drawing, or <button id="demo">try an example <span>↗</span></button></span></div><button class="icon-button" id="dismiss-hint" aria-label="Dismiss tip"><svg><use href="#i-close"/></svg></button></div>
+        <div class="map-bottom"><div class="basemap-toggle" aria-label="Map style"><button class="active" id="satellite" aria-pressed="true"><span class="map-swatch satellite-swatch"></span>Satellite</button><button id="streets" aria-pressed="false"><span class="map-swatch street-swatch"></span>Street</button></div><div class="cursor-coordinates" id="cursor-coordinates">37.7749° N &nbsp; 122.4194° W</div><div class="north-indicator"><span>N</span><svg viewBox="0 0 24 30"><path d="m12 3 8 23-8-5-8 5Z" fill="currentColor" stroke="none"/></svg></div></div>
+        <div class="map-error" id="map-error" hidden>Map imagery couldn’t load. Check your connection or try the Street view.</div>
+      </section>
+    </div>
+    <footer class="page-footer"><span>Made for the curious. Built for the precise.</span><span>Pan to explore <span class="footer-dot">·</span> Scroll to zoom <span class="footer-dot">·</span> Draw to discover</span></footer>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="help-dialog"><button class="icon-button dialog-close" id="close-help" aria-label="Close instructions"><svg><use href="#i-close"/></svg></button><span class="eyebrow">A SMALL GUIDE TO A BIG WORLD</span><h2>Find your place.</h2><ol><li>Search for a place, or pan and zoom the map.</li><li>Select <strong>Draw a polygon</strong> and click to place at least three points.</li><li>Click the first point or press <strong>Enter</strong> to close your shape.</li><li>Drag any vertex to refine your boundary. Copy or download the coordinates.</li></ol><p><strong>Shortcuts:</strong> / to search · Enter to finish · Backspace to undo a point · Escape to cancel.</p><p>Coordinates use WGS 84. The table shows latitude, longitude; GeoJSON uses longitude, latitude. Measurements are approximate. Your last completed selection is saved in this browser.</p><button class="primary-button" id="got-it">Let’s explore <svg><use href="#i-arrow"/></svg></button></dialog>
+</body>
+</html>
