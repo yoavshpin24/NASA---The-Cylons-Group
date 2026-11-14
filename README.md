@@ -34,13 +34,28 @@ Preparation builds a spatial index and overview image in `data/`. The source Par
 - Open **Tools** to access **Draw a polygon**, measurements, coordinates, and exports. This panel starts collapsed, and opens as a compact bottom sheet on mobile. Place at least three points and click the first point or press Enter to finish. Drag vertices to edit, copy coordinates, or download GeoJSON/CSV. Closing the panel during drawing cancels that draft and restores the previous selection. Completed selections remain on the map with the panel closed.
 - Field inspection pauses while drawing, and the last completed selection is saved in your browser. Restored selections must be within the Morocco viewing extent.
 
-The server binds only to your computer's loopback address. Field data is read locally. Basemap imagery, place-name search, and optional fonts require internet access.
+The server binds only to your computer's loopback address. Field data is read locally. Basemap imagery and place-name search require internet access.
+
+## Frontend development
+
+The map application is written in TypeScript in `terra-polygon/src/`. Python continues to handle the server, spatial index, field lookup, tile rendering, and Parquet preparation. Generated JavaScript and source maps are committed in `terra-polygon/dist/`, so running the Python app does not require Node or compilation.
+
+To edit the frontend, install Node.js 24 or later, then:
+
+```sh
+cd terra-polygon
+npm ci
+npm run build
+```
+
+Edit the `.ts` source files, then rebuild and refresh the browser. Use `npm run watch` for automatic compilation while editing, or `npm run typecheck` to check types without changing the compiled files. Commit the regenerated `dist/*.js` and `dist/*.js.map` files alongside source changes. Vendored Leaflet stays in JavaScript.
 
 ## Checks
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
-node --test terra-polygon/tests/geometry.test.js
+cd terra-polygon
+npm test
 ```
 
-The JavaScript geometry checks require Node 22 or later. See [the app README](terra-polygon/README.md) for coordinate formats and shortcuts.
+`npm test` builds the frontend, checks the application and test types in strict mode, and runs the TypeScript geometry tests. See [the app README](terra-polygon/README.md) for coordinate formats and shortcuts.

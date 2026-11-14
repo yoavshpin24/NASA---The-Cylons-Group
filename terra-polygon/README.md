@@ -1,6 +1,6 @@
 # Farmland map
 
-A full-window map of Morocco's farmland with field inspection and optional polygon drawing, vertex editing, and coordinate exports. Navigation is constrained to the Morocco area and uses an arrow cursor. No API key or build step required.
+A full-window map of Morocco's farmland with field inspection and optional polygon drawing, vertex editing, and coordinate exports. Navigation is constrained to the Morocco area and uses an arrow cursor. The frontend is written in TypeScript; compiled browser assets are included, so running the app requires no build step or API key.
 
 Run locally from the parent workspace folder:
 
@@ -16,10 +16,16 @@ Open **Tools**, select **Draw a polygon**, place at least three vertices, then c
 
 Shortcuts: `/` search, `Enter` finish, `Backspace` undo point, `Escape` cancel drawing or close the idle tools panel. Search accepts Morocco place names or `latitude, longitude` within the viewing extent.
 
-Leaflet 1.9.4 is included in `dist/vendor`. Satellite imagery is provided by Esri; street maps and place search use OpenStreetMap and Nominatim. Internet access is required for tiles, place search, and optional web fonts. The map uses Web Mercator (latitude ±85.05°); output coordinates use WGS 84. Area is an approximate spherical calculation. GeoJSON coordinates near the antimeridian are unwrapped to preserve the selected shape; longitudes may extend beyond ±180°.
+Leaflet 1.9.4 is included in `dist/vendor`. Satellite imagery is provided by Esri; street maps and place search use OpenStreetMap and Nominatim. Internet access is required for tiles and place search. The map uses Web Mercator (latitude ±85.05°); output coordinates use WGS 84. Area is an approximate spherical calculation. GeoJSON coordinates near the antimeridian are unwrapped to preserve the selected shape; longitudes may extend beyond ±180°.
 
-Run geometry checks with Node 22 or later:
+For frontend development, use Node.js 24 or later from this `terra-polygon` folder:
 
 ```sh
-node --test tests/geometry.test.js
+npm ci
+npm run build
+npm test
 ```
+
+Source files live in `src/`: `app.ts` handles map and selection interactions, `farmland-layer.ts` handles field inspection, `geometry.ts` handles polygon calculations and exports, `types.ts` defines the data contracts, `dom.ts` provides typed DOM access, and `leaflet.ts` exposes the bundled map library with its TypeScript declarations. Python files remain in the parent folder.
+
+Use `npm run watch` to rebuild automatically or `npm run typecheck` to check the application and TypeScript tests without emitting files. The build writes JavaScript and source maps to `dist/`; keep these generated files committed so `python3 map.py` works directly. HTML, CSS, and the Leaflet vendor files stay in `dist/`.

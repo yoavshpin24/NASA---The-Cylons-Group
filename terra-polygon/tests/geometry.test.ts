@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {area, validPolygon, geoJSON, csv, unwrap} from '../dist/geometry.js';
+import {area, validPolygon, geoJSON, csv, unwrap} from '../src/geometry.ts';
 
 const square=[{lat:0,lng:0},{lat:0,lng:1},{lat:1,lng:1},{lat:1,lng:0}];
 test('spherical area of a one degree equatorial square',()=>{
