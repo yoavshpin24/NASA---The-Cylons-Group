@@ -32,6 +32,10 @@ htmlcov/
 
 # Raster data
 *.tif
+*.npz
+
+# Data files
+*.csv
 
 # Local environment and secrets
 .env
