@@ -19,7 +19,6 @@ DATES = [
 PATCH_SIZE = 5
 HALF_PATCH = PATCH_SIZE // 2
 
-# טעינת מטא-דאטה של השדות
 parcels_metadata = {}
 with open(INPUT_CSV, "r", encoding="utf-8") as f:
     reader = csv.DictReader(f)
@@ -43,7 +42,6 @@ for region in REGIONS:
     with rasterio.open(field_id_path) as src:
         field_mask = src.read(1)
         
-    # מציאת מרכז הכובד הגיאומטרי לכל שדה
     field_centroids = {}
     for fid in parcels_metadata[region].keys():
         pixels = (field_mask == fid)
@@ -57,28 +55,26 @@ for region in REGIONS:
     if num_fields == 0:
         continue
         
-    X_data = []
-    y_data = []
-    field_ids = []
+    # הקצאת זיכרון מראש לכל הגזירים כדי להימנע מהגדלת רשימות דינמית
+    field_patches = {fid: np.zeros((len(DATES), 3, PATCH_SIZE, PATCH_SIZE), dtype=np.float32) for fid in field_centroids.keys()}
     
-    # חילוץ גזיר תמונה סביב המרכז לכל שדה בכל תאריך
-    for fid, (cy, cx) in field_centroids.items():
-        # יצירת מבנה הנתונים: (מספר תאריכים, מספר ערוצים, גובה, רוחב)
-        field_time_series = np.zeros((len(DATES), 3, PATCH_SIZE, PATCH_SIZE), dtype=np.float32)
+    # לולאת התאריכים נמצאת כעת בחוץ - פותחים כל מפה רק פעם אחת!
+    for d_idx, date_str in enumerate(DATES):
+        b4_path = DATA_DIR / region / date_str / f"{region}_B04_{date_str}.tif"
+        b8_path = DATA_DIR / region / date_str / f"{region}_B08_{date_str}.tif"
+        b11_path = DATA_DIR / region / date_str / f"{region}_B11_{date_str}.tif"
         
-        for d_idx, date_str in enumerate(DATES):
-            b4_path = DATA_DIR / region / date_str / f"{region}_B04_{date_str}.tif"
-            b8_path = DATA_DIR / region / date_str / f"{region}_B08_{date_str}.tif"
-            b11_path = DATA_DIR / region / date_str / f"{region}_B11_{date_str}.tif"
+        if not (b4_path.exists() and b8_path.exists() and b11_path.exists()):
+            continue
             
-            if not (b4_path.exists() and b8_path.exists() and b11_path.exists()):
-                continue
-                
-            with rasterio.open(b4_path) as src4, rasterio.open(b8_path) as src8, rasterio.open(b11_path) as src11:
-                red = src4.read(1)
-                nir = src8.read(1)
-                swir = src11.read(1)
+        print(f"  Loading date {date_str} into RAM...")
+        with rasterio.open(b4_path) as src4, rasterio.open(b8_path) as src8, rasterio.open(b11_path) as src11:
+            red = src4.read(1)
+            nir = src8.read(1)
+            swir = src11.read(1)
             
+        # גזירת כל השדות מתוך המפה שכבר נמצאת בזיכרון המהיר
+        for fid, (cy, cx) in field_centroids.items():
             for c_idx, band in enumerate([red, nir, swir]):
                 y_min = max(0, cy - HALF_PATCH)
                 y_max = min(band.shape[0], cy + HALF_PATCH + 1)
@@ -87,7 +83,6 @@ for region in REGIONS:
                 
                 patch = band[y_min:y_max, x_min:x_max]
                 
-                # ריפוד הפיקסלים במקרה שהשדה צמוד לקצה המפה
                 pad_y_before = max(0, -(cy - HALF_PATCH))
                 pad_y_after = max(0, (cy + HALF_PATCH + 1) - band.shape[0])
                 pad_x_before = max(0, -(cx - HALF_PATCH))
@@ -96,9 +91,14 @@ for region in REGIONS:
                 if pad_y_before > 0 or pad_y_after > 0 or pad_x_before > 0 or pad_x_after > 0:
                     patch = np.pad(patch, ((pad_y_before, pad_y_after), (pad_x_before, pad_x_after)), mode='reflect')
                     
-                field_time_series[d_idx, c_idx, :, :] = patch
+                field_patches[fid][d_idx, c_idx, :, :] = patch
                 
-        X_data.append(field_time_series)
+    X_data = []
+    y_data = []
+    field_ids = []
+    
+    for fid in field_centroids.keys():
+        X_data.append(field_patches[fid])
         y_data.append(parcels_metadata[region][fid]["is_maize"])
         field_ids.append(fid)
         
