@@ -30,6 +30,9 @@ htmlcov/
 # Jupyter
 .ipynb_checkpoints/
 
+# Raster data
+*.tif
+
 # Local environment and secrets
 .env
 .env.*
